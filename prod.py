@@ -14,8 +14,8 @@ PROJECT_ID = 'stayloom'
 # Secret Manager
 SM_SECRET_NAME = 'sa-key-pricing-pipeline'
 # BigQuery
-BQ_DATASET_STAYLOOM = "gcp_p_stayloom_bq"
-BQ_TABLE_EXPECTATIONS = "expectations"
+BQ_DATASET_STAYLOOM = "guesty"
+BQ_TABLE_EXPECTATIONS = "t_expectations"
 # Google Sheets:
 #   Heirloom Pricing Model
 #   https://docs.google.com/spreadsheets/d/1cD6YngYtcGiy8zdqk80HwVE-ehHh5aAgBHFHVnhG3tI
@@ -75,10 +75,10 @@ def get_expectations():
                      'occup_factor', 'occupancy_sd', 'expected_occupancy', 'upper_occupancy', 'lower_occupancy', 'week',
                      'season_factor']
 
-    # insert(final)
+    insert(final)
 
 
-#
+
 # def delete_data():
 #     client = bigquery.Client.from_service_account_json(SERVICE_ACCOUNT_FILE)
 #     query = f"""Delete from `{PROJECT_ID}.{BQ_DATASET_STAYLOOM}.{BQ_TABLE_EXPECTATIONS}` where 1=1 """
@@ -86,22 +86,22 @@ def get_expectations():
 #     print("delete data from expectation table")
 
 
-# def insert(df):
-#     # Create a job config
-#     client = bigquery.Client()
-#     job_config = bigquery.LoadJobConfig()
-#     # Set the destination table
-#     table_ref = client.dataset(BQ_DATASET_STAYLOOM).table(BQ_TABLE_EXPECTATIONS)
-#     # time_partitioning = bigquery.table.TimePartitioning(field="date", require_partition_filter=True)
+def insert(df):
+    # Create a job config
+    client = bigquery.Client()
+    job_config = bigquery.LoadJobConfig()
+    # Set the destination table
+    table_ref = client.dataset(BQ_DATASET_STAYLOOM).table(BQ_TABLE_EXPECTATIONS)
+    # time_partitioning = bigquery.table.TimePartitioning(field="date", require_partition_filter=True)
 
-#     job_config.write_disposition = 'WRITE_TRUNCATE'
-#     # job_config.time_partitioning = time_partitioning
-#     load_job = client.load_table_from_dataframe(df, table_ref, job_config=job_config)
-#     result = load_job.result()
-#     if result.errors is not None:
-#         print("Error occurred while inserting expectations data into bigquery " + str(result.errors))
-#     else:
-#         print("Expectations are inserted into bigquery successfully")
+    job_config.write_disposition = 'WRITE_TRUNCATE'
+    # job_config.time_partitioning = time_partitioning
+    load_job = client.load_table_from_dataframe(df, table_ref, job_config=job_config)
+    result = load_job.result()
+    if result.errors is not None:
+        print("Error occurred while inserting expectations data into bigquery " + str(result.errors))
+    else:
+        print("Expectations are inserted into bigquery successfully")
 
 
 # ------ SECRET MANAGER ---------
