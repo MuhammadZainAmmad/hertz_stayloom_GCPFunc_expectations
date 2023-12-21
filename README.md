@@ -1,2 +1,3 @@
-# stayloom_expectations_cloudFunctionDebug
-Description: Debug the script of cloud function that is finishing with status code 200 but not inserting any record in bigquery table
+- **stayloom_expectations_cloudFunctionDebug**
+    - Task 01: Debug the script of cloud function that is finishing with status code 200 but not inserting any record in bigquery table
+    - Task 02: extend the functionality to include another column from expectations sheet to BigQuery table
