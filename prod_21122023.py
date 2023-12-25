@@ -4,7 +4,6 @@ import pygsheets
 from google.cloud import bigquery
 from google.cloud import secretmanager
 
-
 # ------ CONFIG -----------------
 # GCP
 PROJECT_ID = 'stayloom'
