@@ -75,8 +75,8 @@ def get_expectations():
         final = pd.merge(Df_Expectations, seasonality, on=['Market', 'Month'], how='left')
 
         final.columns = ['market', 'unit_size', 'month', 'final_occupancy', 'weeks_out', 'expected_attainment', 'attain_sd',
-                        'occup_factor', 'occupancy_sd', 'expected_occupancy', 'upper_occupancy', 'lower_occupancy', 'week',
-                        'season_factor', 'Expected_Weekend_Occupancy']
+                            'occup_factor', 'occupancy_sd', 'expected_occupancy', 'upper_occupancy', 'lower_occupancy', 'Expected_Weekend_Occupancy', 'week',
+                            'season_factor']
 
         insert(final)
         return(0)
