@@ -1,6 +1,3 @@
-# all create code removed 
-# original cloud function script cloned on 10 Oct 2023, for debugging the reason of no insertion in bigquery table 
-
 import flask
 import pandas as pd
 import pygsheets
@@ -42,43 +39,49 @@ def get_expectations():
     dictionary = gc.open_by_key(SHEET_KEY)
     Worksheet_dictionary = dictionary.worksheet_by_title(SHEET_TAB)
     Df_Expectations = Worksheet_dictionary.get_as_df()
-    Df_Expectations = Df_Expectations[Df_Expectations['Market'] != ""]
-    Df_Expectations = Df_Expectations[
-        ['Market', 'Unit Size', 'Month', 'Final Occupancy', 'Weeks Out', 'Expected Attainment(%)', 'Sd.',
-         'Occup. Factor', 'Occupancy Sd.', 'ExpectedOccupancy', 'Upper  Occupancy', 'Lower Occupancy']]
-    Df_Expectations.columns = ['Market', 'Unit_Size', 'Month', 'Final_Occupancy', 'Weeks_Out',
-                               'Expected_Attainment', 'Attain_Sd', 'Occup_Factor', 'Occupancy_Sd.',
-                               'Expected_Occupancy', 'Upper_Occupancy', 'Lower_Occupancy']
 
-    # Seasonality spread sheet
-    pricing_model = gc.open_by_key(SHEET_KEY_HEIRLOOM_PRICING_MODEL)
-    Worksheet_seasonality = pricing_model.worksheet_by_title(SHEET_TAB_SEASONALITY)
-    Df_seasonality = Worksheet_seasonality.get_as_df()
-    Df_seasonality = Df_seasonality[Df_seasonality['City'] != ""]
-    Df_seasonality = Df_seasonality[['City', 'Week', 'Factor', 'Month']]
-    Df_seasonality.columns = ['Market', 'Week', 'Season_Factor', 'Month']
+    if '#NAME?' in Df_Expectations['Market'].values:
+        print(f"Name error in the sheet!")
+        print('Stopping the pipeline!')
+        return(-1)
+    else:
+        Df_Expectations = Df_Expectations[Df_Expectations['Market'] != ""]
+        Df_Expectations = Df_Expectations[
+            ['Market', 'Unit Size', 'Month', 'Final Occupancy', 'Weeks Out', 'Expected Attainment(%)', 'Sd.',
+            'Occup. Factor', 'Occupancy Sd.', 'ExpectedOccupancy', 'Upper  Occupancy', 'Lower Occupancy', 'Expected Weekend Occupancy']]
+        Df_Expectations.columns = ['Market', 'Unit_Size', 'Month', 'Final_Occupancy', 'Weeks_Out',
+                                'Expected_Attainment', 'Attain_Sd', 'Occup_Factor', 'Occupancy_Sd.',
+                                'Expected_Occupancy', 'Upper_Occupancy', 'Lower_Occupancy', 'Expected_Weekend_Occupancy']
 
-    # Filter the cells where valus is #VALUE!
-    condition = Df_seasonality['Season_Factor'] == '#VALUE!'
-    Df_seasonality = Df_seasonality.drop(Df_seasonality[condition].index)
+        # Seasonality spread sheet
+        pricing_model = gc.open_by_key(SHEET_KEY_HEIRLOOM_PRICING_MODEL)
+        Worksheet_seasonality = pricing_model.worksheet_by_title(SHEET_TAB_SEASONALITY)
+        Df_seasonality = Worksheet_seasonality.get_as_df()
+        Df_seasonality = Df_seasonality[Df_seasonality['City'] != ""]
+        Df_seasonality = Df_seasonality[['City', 'Week', 'Factor', 'Month']]
+        Df_seasonality.columns = ['Market', 'Week', 'Season_Factor', 'Month']
 
-    # Convert the season factor to float
-    #   e.g. 100% -> 1.0
-    Df_seasonality['Season_Factor'] = (Df_seasonality['Season_Factor'].replace('%', '', regex=True).astype(float)) / 100
-    seasonality = Df_seasonality.groupby(['Market', 'Month']).mean().reset_index()
+        # Filter the cells where valus is #VALUE!
+        condition = Df_seasonality['Season_Factor'] == '#VALUE!'
+        Df_seasonality = Df_seasonality.drop(Df_seasonality[condition].index)
 
-    Df_Expectations['Month'] = Df_Expectations['Month'].astype(str)
-    seasonality['Month'] = seasonality['Month'].astype(str)
-    final = pd.merge(Df_Expectations, seasonality, on=['Market', 'Month'], how='left')
+        # Convert the season factor to float
+        #   e.g. 100% -> 1.0
+        Df_seasonality['Season_Factor'] = (Df_seasonality['Season_Factor'].replace('%', '', regex=True).astype(float)) / 100
+        seasonality = Df_seasonality.groupby(['Market', 'Month']).mean().reset_index()
 
-    final.columns = ['market', 'unit_size', 'month', 'final_occupancy', 'weeks_out', 'expected_attainment', 'attain_sd',
-                     'occup_factor', 'occupancy_sd', 'expected_occupancy', 'upper_occupancy', 'lower_occupancy', 'week',
-                     'season_factor']
+        Df_Expectations['Month'] = Df_Expectations['Month'].astype(str)
+        seasonality['Month'] = seasonality['Month'].astype(str)
+        final = pd.merge(Df_Expectations, seasonality, on=['Market', 'Month'], how='left')
 
-    insert(final)
+        final.columns = ['market', 'unit_size', 'month', 'final_occupancy', 'weeks_out', 'expected_attainment', 'attain_sd',
+                        'occup_factor', 'occupancy_sd', 'expected_occupancy', 'upper_occupancy', 'lower_occupancy', 'week',
+                        'season_factor', 'Expected_Weekend_Occupancy']
 
+        insert(final)
+        return(0)
 
-
+#
 # def delete_data():
 #     client = bigquery.Client.from_service_account_json(SERVICE_ACCOUNT_FILE)
 #     query = f"""Delete from `{PROJECT_ID}.{BQ_DATASET_STAYLOOM}.{BQ_TABLE_EXPECTATIONS}` where 1=1 """
@@ -138,11 +141,13 @@ class SecretManager():
 
 # ------ ENTRY POINT ---------
 def main(request):
-    get_expectations()
-    return flask.Response(status=200)
+    status = get_expectations()
 
+    if status == 0:
+        return flask.Response(status=200)
+    else:
+        return flask.Response(status=400)
 
 # ------ TEST ----------------
 if __name__ == '__main__':
-	main(request=None)
-        
+    main(request=None)      
